@@ -2,7 +2,8 @@
 #include "LPCStructure.h"
 #include <unistd.h>
 
-unsigned char Lcp2(string a, string b){
+//Returns the longest common prefix between two strings as a byte
+uint Lcp2(string a, string b){
 	uint ind = 0;
 	bool con = true;
 	while (con){
@@ -13,12 +14,13 @@ unsigned char Lcp2(string a, string b){
 	}
 	unsigned char *lcp = (unsigned char *)malloc(1);
 	memcpy(lcp,(unsigned char *)&ind,1);
-	return lcp[0];
+	//return lcp[0];
+	return ind;
 
 }
 
 //Emits the first lcpArray[a] characters of stringset[a]
-std::string EmitString(int a, int * lcpArray, std::vector<std::string> stringset){
+std::string EmitString(int a, std::vector<uint> lcpArray, std::vector<std::string> stringset){
 	int l = lcpArray[a];
 	char * str = (char*)malloc(l+1);
 	for (int i=0; i<l; i++){
@@ -27,42 +29,54 @@ std::string EmitString(int a, int * lcpArray, std::vector<std::string> stringset
 	return str;
 }
 
-//Simulate the visit of a compacted trie given a set of ordered strings
-void TrieVisitSimulation(std::vector<std::string> stringset, std::ofstream *output, int i, int j, int * lcpArray){
+
+//Simulate the visit of a compacted trie given a set of ordered strings and the lcp array
+void TrieVisitSimulationSuccint(LPCStructure *lpfc,std::vector<std::string> stringset, std::ofstream *output, std::vector<uint> lcpArray){
+	succinct::cartesian_tree t (lcpArray);
+	TrieVisitUtil(lpfc,lcpArray,&t,stringset,output,0,lcpArray.size()-1);
+}
+
+//method used to simulate the visit DFS of a trie
+void TrieVisitUtil(LPCStructure *lpfc,std::vector<uint> lcpArray, succinct::cartesian_tree *t,std::vector<std::string> stringset,std::ofstream *output, uint64_t i,uint64_t j ){
 	if(i == j){
-		cout << stringset[i] << endl;
+		*output << stringset[i] <<"\n";
+		cout << stringset[i]<< endl;
+		lpfc->Append(stringset[i]);
 	}
 	else {
-		int *mins = (int*)malloc(2*sizeof(int));
-		//find the range of the first minima in the stringset
-		RangeMinQuery(i,j,lcpArray,mins);
-		//emit the first characters of the first minimum shared with its previous string
-		int newi = mins[0];
-		int newj = mins[1];
-		free(mins);
+		while (lcpArray[i+1] == lcpArray[i] && i+1<j){
+			*output << stringset[i]<<"\n";
+			cout << stringset[i] << endl;
+			lpfc->Append(stringset[i]);
+			i = i+1;
+		}
+		uint64_t newi = t->rmq(i+1,j);
 		if (lcpArray[newi] != 0){
 			std::string emit = EmitString(newi,lcpArray,stringset);
-			cout << emit << endl;}
-		TrieVisitSimulation(stringset,output,i,newi-1,lcpArray);
-		//Possible to avoid all the recursive calls...
-		for (int k=1; k<(newj-newi); k++){
-			TrieVisitSimulation(stringset,output,newi+k,newi+k,lcpArray);
+			*output << emit<<"\n";
+			cout << emit << endl;
+			lpfc->Append(emit);
 		}
-		TrieVisitSimulation(stringset,output,newj,j,lcpArray);
+		TrieVisitUtil(lpfc,lcpArray,t,stringset,output,i,newi-1);
+		TrieVisitUtil(lpfc,lcpArray,t,stringset,output,newi,j);
 	}
 }
 
-//Find the range of the first minimum elements of lcpArray between position i and j
-void RangeMinQuery(int i, int j,int* lcpArray,int *Range){
-	int elated =i+1 ;
-	for(int k=i+1;k<=j;k++){
-		if (lcpArray[k] < lcpArray[elated]){
-			elated = k;}}
-	int current = elated+1;
-	while(lcpArray[current] == lcpArray[elated] && current <=j){
-		current ++;}
-	current = current -1;
-	Range[0] = elated;
-	Range[1] = current;
 
+
+
+
+//Builds the LCP-Array from a vector of strings
+std::vector<uint> LCP_Builder (std::vector<std::string> stringset){
+	std::vector<uint> lcpArray;
+	lcpArray.push_back(100000);
+	uint lcp;
+	std::string first = stringset[0];
+	for (int i=1; i<stringset.size(); i++){
+		lcp = Lcp2(first,stringset[i]);
+		lcpArray.push_back(lcp);
+		first = stringset[i];
+	}
+	return lcpArray;
 }
+

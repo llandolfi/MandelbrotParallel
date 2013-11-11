@@ -16,25 +16,25 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 using namespace std;
 
 class LPCStructure {
 
 
 public:
-	LPCStructure(int constant, int BufDimension);
+	LPCStructure(uint constant, uint BufDimension);
 	virtual ~LPCStructure();
-	void AppendLPFC(string appending,unsigned char lcp);
+	void AppendLPFC(string appending,uint lcp);
 	void Append(string s);
 	void SaveBuffer(ofstream out);
 
 	unsigned char *buffer; //buffer to fetch and store the strings
-	int *lcpArray; 		//Temporary Array of lcp's
-	int lcpindex;
-	int C;				//parametric constant to tune the LPFC: no scan more than C characters
-	int index;			//Current buffer index
-	int NC;				//Number of characters to be scanned to decode the string
+	uint C;				//parametric constant to tune the LPFC: no scan more than C characters
+	uint index;			//Current buffer index
+	uint NC;				//Number of characters to be scanned to decode the string
 	string lastString;	//the last inserted string
+	std::vector<uint> positions;
 };
 
 /* namespace std */
