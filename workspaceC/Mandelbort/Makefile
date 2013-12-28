@@ -1,0 +1,13 @@
+PROC?=
+GROUP1?=
+
+all: hello
+
+hello: ManMain.cpp functions.cpp
+	 mpiCC  ManMain.cpp functions.cpp -o Test  -O2 -L/usr/X11R6/lib -lm -lpthread -lX11
+
+clean:
+	rm *.png
+	
+run:
+	mpirun -np $(PROC) Test $(GROUP1)
